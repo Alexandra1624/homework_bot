@@ -8,6 +8,7 @@ import time
 import requests
 from dotenv import load_dotenv
 from telegram import error
+from http import HTTPStatus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,7 +77,7 @@ def get_api_answer(current_timestamp: int) -> list:
     except TypeError as e:
         raise PracticumException(f'Не корректный тип данных {e}')
 
-    if homework_statuses.status_code != 200:
+    if homework_statuses.status_code != HTTPStatus.OK:
         logging.debug(homework_statuses.json())
         raise PracticumException(
             f'Ошибка {homework_statuses.status_code} practicum.yandex.ru')
@@ -138,11 +139,11 @@ def check_tokens():
     Если отсутствует хотя бы одна переменная окружения —
     функция должна вернуть False, иначе — True.
     """
-    if PRACTICUM_TOKEN is None or \
-            TELEGRAM_TOKEN is None or \
-            TELEGRAM_CHAT_ID is None:
-        return False
-    return True
+    token_tuple = (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)
+    for token in token_tuple:
+        if not token:
+            return False
+        return True
 
 
 def timeout_and_logging(message: str = None, level_error=logging.error):
@@ -157,7 +158,7 @@ def main():
         logging.critical('Отсутствует хотя бы одна переменная окружения.')
         return 0
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())   # начальное значение timestamp или 0
+    current_timestamp = 0  # начальное значение timestamp или 0
     while True:
         try:
             response = get_api_answer(current_timestamp)
